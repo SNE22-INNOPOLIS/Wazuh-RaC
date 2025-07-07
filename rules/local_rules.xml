@@ -94,31 +94,11 @@
   </rule>
 
   <!-- High Severity Rule -->
-  <rule id="100812" level="10">
+  <rule id="100403" level="10">
 	<decoded_as>dependency_track</decoded_as>
 	<field name="severity">HIGH</field>
 	<description>[Dependency-Track] HIGH severity vulnerability detected: $(vulnId) in Component: $(component) of Project: $(project)</description>
   </rule>
 
-  <!-- Medium Severity Rule -->
-  <rule id="100813" level="8">
-	<decoded_as>dependency_track</decoded_as>
-	<field name="severity">MEDIUM</field>
-	<description>[Dependency-Track] MEDIUM severity vulnerability detected: $(vulnId) in Component: $(component) of Project: $(project)</description>
-  </rule>
-
-  <!-- Low Severity Rule -->
-  <rule id="100405" level="6">
-	<decoded_as>dependency_track</decoded_as>
-	<field name="severity">LOW</field>
-	<description>[Dependency-Track] LOW severity vulnerability detected: $(vulnId) in Component: $(component) of Project: $(project)</description>
-  </rule>
-
-  <!-- Unassigned Severity Rule -->
-  <rule id="100401" level="6">
-	<decoded_as>dependency_track</decoded_as>
-	<field name="severity">UNASSIGNED</field>
-	<description>[Dependency-Track] UNASSIGNED severity vulnerability detected: $(vulnId) in Component: $(component) of Project: $(project)</description>
-  </rule>
 </group>
 
