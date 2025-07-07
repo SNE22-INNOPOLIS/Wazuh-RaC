@@ -26,3 +26,19 @@
     <group>authentication_failed,pci_dss_10.2.4,pci_dss_10.2.5,</group>
   </rule>
 </group>
+
+<group name="dependency_track">
+  <!-- Critical Severity Rule -->
+  <rule id="100811" level="12">
+	<decoded_as>dependency_track</decoded_as>
+	<field name="severity">CRITICAL</field>
+	<description>[Dependency-Track] CRITICAL severity vulnerability detected: $(vulnId) in Component: $(component) of Project: $(project)</description>
+  </rule>
+
+  <!-- High Severity Rule -->
+  <rule id="100812" level="10">
+	<decoded_as>dependency_track</decoded_as>
+	<field name="severity">HIGH</field>
+	<description>[Dependency-Track] HIGH severity vulnerability detected: $(vulnId) in Component: $(component) of Project: $(project)</description>
+  </rule>
+</group>
