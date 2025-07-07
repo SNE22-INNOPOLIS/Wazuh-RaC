@@ -21,7 +21,7 @@
   </rule>
 
   <!-- Low Severity Rule -->
-  <rule id="100814" level="6">
+  <rule id="100402" level="6">
 	<decoded_as>dependency_track</decoded_as>
 	<field name="severity">LOW</field>
 	<description>[Dependency-Track] LOW severity vulnerability detected: $(vulnId) in Component: $(component) of Project: $(project)</description>
