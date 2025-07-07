@@ -33,16 +33,21 @@ def extract_rule_ids_from_xml(content):
         pass
     return ids
 
-def get_all_main_rule_ids():
-    """Extract rule IDs from all rule files in origin/main."""
+def get_all_main_rule_ids(exclude_file=None):
+    """Extract all rule IDs in origin/main, optionally excluding a file."""
     run_git_command(["git", "fetch", "origin", "main"])
     files_output = run_git_command(["git", "ls-tree", "-r", "origin/main", "--name-only"])
     xml_files = [f for f in files_output.splitlines() if f.startswith("rules/") and f.endswith(".xml")]
 
     all_ids = set()
     for file in xml_files:
-        content = run_git_command(["git", "show", f"origin/main:{file}"])
-        all_ids.update(extract_rule_ids_from_xml(content))
+        if exclude_file and file == exclude_file.as_posix():
+            continue
+        try:
+            content = run_git_command(["git", "show", f"origin/main:{file}"])
+            all_ids.update(extract_rule_ids_from_xml(content))
+        except subprocess.CalledProcessError:
+            continue
     return all_ids
 
 def get_rule_ids_from_main_version(file_path: Path):
@@ -59,7 +64,6 @@ def main():
         return
 
     print(f"🔍 Checking rule ID conflicts for files: {[f.name for _, f in changed_files]}")
-    all_main_ids = get_all_main_rule_ids()
 
     for status, path in changed_files:
         print(f"\n🔎 Checking file: {path.name}")
@@ -72,7 +76,7 @@ def main():
             continue
 
         if status == "A":
-            # New file — check all IDs for conflicts
+            all_main_ids = get_all_main_rule_ids()
             conflicts = dev_ids & all_main_ids
             if conflicts:
                 print(f"❌ Conflict in new file {path.name}. Rule IDs: {sorted(conflicts)}")
@@ -81,20 +85,26 @@ def main():
                 print(f"✅ No conflict in new file {path.name}")
 
         elif status == "M":
-            # Existing file — compare its current and main branch version
             main_ids = get_rule_ids_from_main_version(path)
 
             if dev_ids == main_ids:
                 print(f"ℹ️ {path.name} modified but rule IDs unchanged.")
-                continue  # Safe
+                continue
+
+            # Compare modified file's IDs against rest of main (excluding its own original)
+            all_other_main_ids = get_all_main_rule_ids(exclude_file=path)
+            conflicts = dev_ids & all_other_main_ids
+
+            # Also check for rule ID repetition within the file itself (could be malformed)
+            if len(dev_ids) < len(list(ET.fromstring(dev_content).findall(".//rule"))):
+                print(f"❌ Duplicate rule IDs detected in {path.name}.")
+                sys.exit(1)
+
+            if conflicts:
+                print(f"❌ Conflict in modified file {path.name}. Conflicting rule IDs: {sorted(conflicts)}")
+                sys.exit(1)
             else:
-                new_ids = dev_ids - main_ids  # Only new or changed IDs
-                conflicts = new_ids & (all_main_ids - main_ids)
-                if conflicts:
-                    print(f"❌ Conflict in modified file {path.name}. New rule IDs conflicting: {sorted(conflicts)}")
-                    sys.exit(1)
-                else:
-                    print(f"✅ Modified file {path.name} has no conflicting new rule IDs.")
+                print(f"✅ Modified file {path.name} has no conflicting rule IDs.")
 
     print("\n✅ All rule file changes passed conflict checks.")
 
