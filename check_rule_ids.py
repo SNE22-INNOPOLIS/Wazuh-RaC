@@ -27,7 +27,9 @@ def get_changed_rule_files():
 def extract_rule_ids_from_xml(content):
     ids = []
     try:
-        root = ET.fromstring(content)
+        # Wrap multiple root elements in a fake <root> tag to avoid parse errors
+        wrapped = f"<root>{content}</root>"
+        root = ET.fromstring(wrapped)
         for rule in root.findall(".//rule"):
             rule_id = rule.get("id")
             if rule_id and rule_id.isdigit():
@@ -35,6 +37,7 @@ def extract_rule_ids_from_xml(content):
     except ET.ParseError as e:
         print(f"⚠️ XML Parse Error: {e}")
     return ids
+
 
 def get_rule_ids_per_file_in_main():
     run_git_command(["git", "fetch", "origin", "main"])
