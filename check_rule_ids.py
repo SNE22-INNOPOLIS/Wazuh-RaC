@@ -2,19 +2,21 @@ import subprocess
 import xml.etree.ElementTree as ET
 from pathlib import Path
 import sys
-from collections import Counter, defaultdict
+from collections import defaultdict, Counter
 
 def run_git_command(args):
     result = subprocess.run(args, capture_output=True, text=True, check=True)
     return result.stdout
 
 def get_changed_rule_files():
-    """Get list of changed (A or M) rule files and their status."""
     try:
         output = run_git_command(["git", "diff", "--name-status", "origin/main...HEAD"])
         changed_files = []
-        for line in output.splitlines():
-            status, file_path = line.split(maxsplit=1)
+        for line in output.strip().splitlines():
+            parts = line.strip().split(maxsplit=1)
+            if len(parts) != 2:
+                continue
+            status, file_path = parts
             if file_path.startswith("rules/") and file_path.endswith(".xml"):
                 changed_files.append((status, Path(file_path)))
         return changed_files
@@ -30,20 +32,17 @@ def extract_rule_ids_from_xml(content):
             rule_id = rule.get("id")
             if rule_id and rule_id.isdigit():
                 ids.append(int(rule_id))
-    except ET.ParseError:
-        pass
+    except ET.ParseError as e:
+        print(f"⚠️ XML Parse Error: {e}")
     return ids
 
-def get_rule_ids_per_file_main(exclude_file=None):
-    """Returns a dict mapping each rule ID to the file(s) it appears in on origin/main."""
+def get_rule_ids_per_file_in_main():
     run_git_command(["git", "fetch", "origin", "main"])
     files_output = run_git_command(["git", "ls-tree", "-r", "origin/main", "--name-only"])
     xml_files = [f for f in files_output.splitlines() if f.startswith("rules/") and f.endswith(".xml")]
 
     rule_id_to_files = defaultdict(set)
     for file in xml_files:
-        if exclude_file and file == exclude_file.as_posix():
-            continue
         try:
             content = run_git_command(["git", "show", f"origin/main:{file}"])
             rule_ids = extract_rule_ids_from_xml(content)
@@ -55,7 +54,7 @@ def get_rule_ids_per_file_main(exclude_file=None):
 
 def get_rule_ids_from_main_version(file_path: Path):
     try:
-        content = run_git_command(["git", "show", f"origin/main:{file_path}"])
+        content = run_git_command(["git", "show", f"origin/main:{file_path.as_posix()}"])
         return extract_rule_ids_from_xml(content)
     except subprocess.CalledProcessError:
         return []
@@ -78,6 +77,8 @@ def main():
         print("✅ No rule files were changed in this PR.")
         return
 
+    rule_id_to_files_main = get_rule_ids_per_file_in_main()
+
     print(f"🔍 Checking rule ID conflicts for files: {[f.name for _, f in changed_files]}")
 
     for status, path in changed_files:
@@ -90,33 +91,33 @@ def main():
             print(f"⚠️ Could not read {path.name}: {e}")
             continue
 
-        # Detect duplicates in the same file
+        # Check for internal duplicates
         duplicates = detect_duplicates(dev_ids)
         if duplicates:
             print(f"❌ Duplicate rule IDs detected in {path.name}: {sorted(duplicates)}")
             sys.exit(1)
 
-        rule_id_to_files = get_rule_ids_per_file_main(exclude_file=path if status == "M" else None)
-
         if status == "A":
-            conflicting_ids = set(dev_ids) & set(rule_id_to_files.keys())
+            # New file
+            conflicting_ids = set(dev_ids) & set(rule_id_to_files_main.keys())
             if conflicting_ids:
-                print_conflicts(conflicting_ids, rule_id_to_files)
+                print_conflicts(conflicting_ids, rule_id_to_files_main)
                 sys.exit(1)
             else:
                 print(f"✅ No conflict in new file {path.name}")
 
         elif status == "M":
+            # Modified file
             main_ids = get_rule_ids_from_main_version(path)
-
             if set(dev_ids) == set(main_ids):
                 print(f"ℹ️ {path.name} modified but rule IDs unchanged.")
                 continue
 
             new_or_changed_ids = set(dev_ids) - set(main_ids)
-            conflicting_ids = new_or_changed_ids & set(rule_id_to_files.keys())
+            conflicting_ids = new_or_changed_ids & set(rule_id_to_files_main.keys())
+
             if conflicting_ids:
-                print_conflicts(conflicting_ids, rule_id_to_files)
+                print_conflicts(conflicting_ids, rule_id_to_files_main)
                 sys.exit(1)
             else:
                 print(f"✅ Modified file {path.name} has no conflicting rule IDs.")
