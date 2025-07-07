@@ -115,7 +115,7 @@
   </rule>
 
   <!-- Unassigned Severity Rule -->
-  <rule id="100815" level="6">
+  <rule id="100401" level="6">
 	<decoded_as>dependency_track</decoded_as>
 	<field name="severity">UNASSIGNED</field>
 	<description>[Dependency-Track] UNASSIGNED severity vulnerability detected: $(vulnId) in Component: $(component) of Project: $(project)</description>
