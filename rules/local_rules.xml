@@ -94,7 +94,7 @@
   </rule>
 
   <!-- High Severity Rule -->
-  <rule id="100403" level="10">
+  <rule id="100401" level="10">
 	<decoded_as>dependency_track</decoded_as>
 	<field name="severity">HIGH</field>
 	<description>[Dependency-Track] HIGH severity vulnerability detected: $(vulnId) in Component: $(component) of Project: $(project)</description>
