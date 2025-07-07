@@ -71,7 +71,7 @@
 
 
   <!-- Rule for File Creation /var/log/cross/config-err-* -->
-  <rule id="100405" level="12" frequency="2" ignore="120">
+  <rule id="100812" level="12" frequency="2" ignore="120">
     <if_sid>200155</if_sid>
     <field name="eventdata.Image" type="pcre2">(?i).elf</field>
     <field name="eventdata.targetFilename" type="pcre2">\/var\/log\/cross\/(?:.*\/)?config-err-.+</field>
